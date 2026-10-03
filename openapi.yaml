@@ -1,0 +1,125 @@
+openapi: 3.1.0
+info:
+  title: Inference Routing Protocol
+  version: 0.1.0-draft
+  summary: Ask a router where an LLM request should run.
+  description: |
+    See SPEC.md for the normative text. Request and response objects are defined in
+    schemas/ (JSON Schema 2020-12) and referenced from here.
+  license:
+    name: Apache-2.0
+    identifier: Apache-2.0
+servers:
+  - url: https://router.example.com
+    description: Any IRP router. The protocol does not fix a host.
+# Authentication is out of scope for IRP. Routers that need it SHOULD use bearer
+# tokens, as OpenAI-compatible APIs do; the empty requirement makes it optional.
+security:
+  - bearerAuth: []
+  - {}
+paths:
+  /v1/model-routing:
+    post:
+      operationId: rankCandidates
+      summary: Suggest-only mode
+      description: Rank the client's candidates for an inference request. The router does not forward the request.
+      tags: [suggest-only]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: schemas/model-routing-request.schema.json
+            examples:
+              default:
+                externalValue: examples/suggest-request.json
+      responses:
+        '200':
+          description: Candidates ranked best first for the requested cqt.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/model-routing-response.schema.json
+              examples:
+                default:
+                  externalValue: examples/suggest-response.json
+        '400': { $ref: '#/components/responses/Problem' }
+        '402': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+        '503': { $ref: '#/components/responses/Problem' }
+  /v1/chat/completions:
+    post:
+      operationId: createRoutedChatCompletion
+      summary: Proxy mode
+      description: |
+        A standard OpenAI Chat Completions call. When the body contains `routing`, or
+        `model` is one of the router's routing aliases (such as `auto`), the router
+        picks a candidate, forwards the request to it, and relays the candidate's
+        response with `routing` added.
+      tags: [proxy]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: schemas/chat-completion-request.schema.json
+            examples:
+              default:
+                externalValue: examples/proxy-request.json
+      responses:
+        '200':
+          description: A chat completion produced by the selected candidate.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/chat-completion-response.schema.json
+              examples:
+                default:
+                  externalValue: examples/proxy-response.json
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  When `stream` is true. Server-sent events as in the OpenAI API; each `data`
+                  payload is a `chat.completion.chunk` matching
+                  schemas/chat-completion-response.schema.json, including `routing`.
+        '400': { $ref: '#/components/responses/Problem' }
+        '402': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+        '503': { $ref: '#/components/responses/Problem' }
+  /v1/model-routing/candidates:
+    get:
+      operationId: listCandidates
+      summary: List the candidates a proxy router can forward to
+      tags: [proxy]
+      responses:
+        '200':
+          description: Candidates available to proxy-mode requests.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/candidate-list.schema.json
+              examples:
+                default:
+                  externalValue: examples/candidate-list.json
+        '503': { $ref: '#/components/responses/Problem' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  responses:
+    Problem:
+      description: An RFC 9457 Problem Details error.
+      content:
+        application/problem+json:
+          schema:
+            $ref: schemas/problem.schema.json
+          examples:
+            noScorableCandidate:
+              externalValue: examples/error-no-scorable-candidate.json
+tags:
+  - name: suggest-only
+    description: The router ranks; the client calls the winner.
+  - name: proxy
+    description: The router ranks and forwards the request to the winner.

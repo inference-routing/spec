@@ -1,0 +1,27 @@
+{
+  "id": "chatcmpl-8f2c",
+  "object": "chat.completion",
+  "created": 1790000000,
+  "model": "moonshotai/kimi-k3",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "The contract sets out…"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 18422,
+    "completion_tokens": 431,
+    "total_tokens": 18853,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "routing": {
+    "candidate_id": "kimi@seller-c"
+  }
+}

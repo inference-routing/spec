@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "common.schema.json",
+  "title": "IRP shared definitions",
+  "$defs": {
+    "cqt": {
+      "description": "Cost/quality trade-off, 0 to 10: 0 = best quality regardless of price, 10 = cheapest acceptable, 5 = balanced. Same scale and direction as OpenRouter's original Auto Router cost_quality_tradeoff.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10,
+      "default": 5
+    },
+    "pricing": {
+      "description": "Prices in USD per 1,000,000 tokens.",
+      "type": "object",
+      "required": [
+        "input",
+        "cache_read",
+        "output"
+      ],
+      "properties": {
+        "input": {
+          "type": "number",
+          "minimum": 0
+        },
+        "cache_read": {
+          "type": "number",
+          "minimum": 0
+        },
+        "output": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "candidate_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "candidate": {
+      "description": "One concrete inference option: a model delivered by a specific seller, at a specific price, with a specific cache state.",
+      "type": "object",
+      "required": [
+        "id",
+        "model",
+        "pricing"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/candidate_id"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Model identifier. SHOULD be the model's OpenRouter ID (author/slug, e.g. anthropic/claude-opus-5); otherwise any stable identifier."
+        },
+        "pricing": {
+          "$ref": "#/$defs/pricing"
+        },
+        "expected_usage": {
+          "description": "What the client already knows about usage on this candidate.",
+          "type": "object",
+          "properties": {
+            "cache_read_tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          }
+        }
+      }
+    },
+    "candidate_ref": {
+      "description": "Reference to a candidate listed by a proxy router.",
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/candidate_id"
+        }
+      }
+    },
+    "router": {
+      "type": "object",
+      "required": [
+        "id",
+        "version"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "expected_usage": {
+      "type": "object",
+      "required": [
+        "input_tokens",
+        "cache_read_tokens",
+        "output_tokens"
+      ],
+      "properties": {
+        "input_tokens": {
+          "description": "Whole prompt, including cache reads.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "cache_read_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "output_tokens": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "ranked_entry": {
+      "type": "object",
+      "required": [
+        "candidate_id",
+        "expected_quality",
+        "expected_cost_usd",
+        "expected_usage"
+      ],
+      "properties": {
+        "candidate_id": {
+          "$ref": "#/$defs/candidate_id"
+        },
+        "expected_quality": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "expected_cost_usd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "expected_usage": {
+          "$ref": "#/$defs/expected_usage"
+        }
+      }
+    },
+    "inference_request": {
+      "description": "An OpenAI Chat Completions request body. Only the members IRP depends on are constrained here; see the OpenAI API reference for the full shape.",
+      "type": "object",
+      "required": [
+        "messages"
+      ],
+      "properties": {
+        "model": {
+          "type": "string"
+        },
+        "messages": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "role"
+            ],
+            "properties": {
+              "role": {
+                "enum": [
+                  "developer",
+                  "system",
+                  "user",
+                  "assistant",
+                  "tool",
+                  "function"
+                ]
+              }
+            }
+          }
+        },
+        "stream": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

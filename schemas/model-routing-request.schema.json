@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "model-routing-request.schema.json",
+  "title": "Suggest-only request (POST /v1/model-routing)",
+  "type": "object",
+  "required": ["request", "routing"],
+  "properties": {
+    "request": { "$ref": "common.schema.json#/$defs/inference_request" },
+    "routing": {
+      "type": "object",
+      "required": ["candidates"],
+      "properties": {
+        "cqt": { "$ref": "common.schema.json#/$defs/cqt" },
+        "candidates": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 512,
+          "items": { "$ref": "common.schema.json#/$defs/candidate" }
+        }
+      }
+    }
+  }
+}

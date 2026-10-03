@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "problem.schema.json",
+  "title": "Error (RFC 9457 Problem Details)",
+  "type": "object",
+  "required": [
+    "type",
+    "title",
+    "status"
+  ],
+  "properties": {
+    "type": {
+      "enum": [
+        "urn:irp:problem:invalid-request",
+        "urn:irp:problem:payment-required",
+        "urn:irp:problem:no-scorable-candidate",
+        "urn:irp:problem:unavailable"
+      ]
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        400,
+        402,
+        422,
+        503
+      ]
+    },
+    "detail": {
+      "type": "string"
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "type": {
+          "const": "urn:irp:problem:invalid-request"
+        },
+        "status": {
+          "const": 400
+        }
+      },
+      "type": "object"
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "urn:irp:problem:payment-required"
+        },
+        "status": {
+          "const": 402
+        }
+      },
+      "type": "object"
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "urn:irp:problem:no-scorable-candidate"
+        },
+        "status": {
+          "const": 422
+        }
+      },
+      "type": "object"
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "urn:irp:problem:unavailable"
+        },
+        "status": {
+          "const": 503
+        }
+      },
+      "type": "object"
+    }
+  ]
+}

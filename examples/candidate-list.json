@@ -1,0 +1,15 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "opus@seller-a",
+      "model": "anthropic/claude-opus-5",
+      "pricing": { "input": 15, "cache_read": 1.5, "output": 75 }
+    },
+    {
+      "id": "kimi@seller-c",
+      "model": "moonshotai/kimi-k3",
+      "pricing": { "input": 0.6, "cache_read": 0.15, "output": 2.5 }
+    }
+  ]
+}

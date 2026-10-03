@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "candidate-list.schema.json",
+  "title": "Candidate list (GET /v1/model-routing/candidates, 200)",
+  "type": "object",
+  "required": [
+    "object",
+    "data"
+  ],
+  "properties": {
+    "object": {
+      "const": "list"
+    },
+    "data": {
+      "type": "array",
+      "items": {
+        "description": "A candidate object (common.schema.json) without expected_usage.",
+        "$ref": "common.schema.json#/$defs/candidate",
+        "properties": {
+          "expected_usage": false
+        },
+        "type": "object"
+      }
+    }
+  }
+}

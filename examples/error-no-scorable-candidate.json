@@ -1,0 +1,6 @@
+{
+  "type": "urn:irp:problem:no-scorable-candidate",
+  "title": "No scorable candidate",
+  "status": 422,
+  "detail": "None of the 3 candidates use a model this router can score."
+}

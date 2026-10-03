@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "chat-completion-response.schema.json",
+  "title": "Proxy-mode response (POST /v1/chat/completions, 200)",
+  "description": "An OpenAI Chat Completions response (or stream chunk) with one extra member, routing. Only the members IRP depends on are constrained here.",
+  "type": "object",
+  "required": [
+    "id",
+    "object",
+    "model",
+    "routing"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "object": {
+      "enum": [
+        "chat.completion",
+        "chat.completion.chunk"
+      ]
+    },
+    "model": {
+      "description": "The model that actually produced the answer, identified like a candidate model (OpenRouter ID where one exists).",
+      "type": "string",
+      "minLength": 1
+    },
+    "routing": {
+      "type": "object",
+      "required": [
+        "candidate_id"
+      ],
+      "properties": {
+        "candidate_id": {
+          "$ref": "common.schema.json#/$defs/candidate_id"
+        }
+      }
+    }
+  }
+}

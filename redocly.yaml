@@ -1,0 +1,7 @@
+extends:
+  - recommended
+rules:
+  # The spec describes any router, so the server URL is a placeholder.
+  no-server-example.com: off
+  # Listing candidates has no client-error case.
+  operation-4xx-response: off
