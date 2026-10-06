@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "model-routing-request.schema.json",
-  "title": "Suggest-only request (POST /v1/model-routing)",
+  "$id": "rank-request.schema.json",
+  "title": "Suggest-only request (POST /v1/routing/rank)",
   "type": "object",
   "required": ["request", "routing"],
   "properties": {

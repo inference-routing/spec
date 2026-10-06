@@ -21,8 +21,8 @@ appear in all capitals.
 
 ## 2. Conventions
 
-- All bodies are JSON (`application/json`), except errors (§7) and streamed proxy
-  responses (§5.2).
+- All bodies are JSON (`application/json`), except errors (§8) and streamed proxy
+  responses (§6.2).
 - All prices are in **USD per 1,000,000 tokens**. All costs are in **USD**.
 - `input_tokens` always counts the whole prompt, *including* tokens read from
   cache. `cache_read_tokens` is the part of it served from cache.
@@ -40,7 +40,7 @@ Sent by the client in both modes.
 | Field | Type | Required | Meaning |
 |---|---|---|---|
 | `cqt` | integer, 0–10 | no, default `5` | Cost/quality trade-off. `0` asks for the best quality regardless of price, `10` for the cheapest acceptable candidate, `5` for a balance |
-| `candidates` | array | suggest: yes · proxy: no | The candidates the router may choose from (§3.2, §5.1) |
+| `candidates` | array | suggest: yes · proxy: no | The candidates the router may choose from (§3.2, §6.1) |
 
 The scale and direction are those of the `cost_quality_tradeoff` parameter that
 OpenRouter introduced for its Auto Router, where 0 "always picks the most capable
@@ -73,8 +73,8 @@ router recognises the same model whichever seller offers it. It SHOULD be the
 model's [OpenRouter](https://openrouter.ai/models) ID, in `author/slug` form (for
 example `anthropic/claude-opus-5` or `moonshotai/kimi-k3`), which is the most widely
 used cross-vendor model naming. For a model OpenRouter does not list, such as a
-private fine-tune, any stable identifier MAY be used; a router that does not
-recognise it omits the candidate (§4.2).
+private fine-tune, any stable identifier MAY be used. Routers list the models they
+support at `GET /v1/routing/models` (§4).
 
 This is not necessarily the name the candidate's seller expects in its own API.
 Mapping a candidate to its seller and the seller's model name is the client's job,
@@ -95,12 +95,28 @@ A router MUST NOT assume two candidates are interchangeable because they share a
 | Field | Type | Required | Meaning |
 |---|---|---|---|
 | `candidate_id` | string | yes | The `id` of a candidate from the request |
-| `expected_quality` | number, 0–1 | yes | Predicted quality of this candidate's answer |
-| `expected_cost_usd` | number ≥ 0 | yes | Predicted total cost of running the inference request on this candidate |
-| `expected_usage` | object | yes | Predicted `input_tokens`, `cache_read_tokens` and `output_tokens`, integers ≥ 0 |
+| `expected_quality` | number, 0–1 | no | Predicted quality of this candidate's answer |
+| `expected_cost_usd` | number ≥ 0 | no | Predicted total cost of running the inference request on this candidate |
+| `expected_usage` | object | no | Predicted `input_tokens`, `cache_read_tokens` and `output_tokens`, integers ≥ 0. All three are present when the object is |
+| `reasoning_effort` | string | no | Suggested reasoning effort for this candidate (see below) |
+
+Only `candidate_id` is required. The order of `ranked` is the router's decision; the
+other fields explain it, and a router includes whichever it can provide. A router
+that only orders candidates is conforming. Clients MUST NOT require the optional
+fields, and MUST NOT treat an absent prediction as zero.
 
 `expected_quality` is calibrated by each router and is only comparable between
 entries of the same response.
+
+`expected_usage.output_tokens` includes reasoning tokens, as `completion_tokens`
+does in the OpenAI API.
+
+`reasoning_effort` is the value the router suggests for the Chat Completions
+`reasoning_effort` parameter when calling this candidate. It uses that parameter's
+values (currently `none`, `minimal`, `low`, `medium`, `high`, `xhigh` and `max`),
+and a router MUST only suggest a value the candidate's model supports. When present,
+the entry's predictions assume it. Clients that do not recognise the value SHOULD
+ignore it.
 
 `expected_cost_usd` SHOULD equal the candidate's prices applied to `expected_usage`:
 
@@ -111,11 +127,48 @@ entries of the same response.
   ─────────────────────────────────────────── ÷ 1,000,000
 ```
 
-## 4. Suggest-only mode
+## 4. Supported models
 
-### 4.1 Request
+`GET /v1/routing/models`
 
-`POST /v1/model-routing`
+Lists the models the router supports, for both modes, in the shape of OpenAI's
+`GET /v1/models`:
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "anthropic/claude-opus-5",
+      "object": "model",
+      "candidates": [
+        { "id": "opus@seller-a", "pricing": { "input": 15, "cache_read": 1.5, "output": 75 } }
+      ]
+    }
+  ]
+}
+```
+
+| Field | Type | Required | Meaning |
+|---|---|---|---|
+| `object` | string | yes | Always `"list"` |
+| `data[].id` | string | yes | Model identifier, named as in §3.2 |
+| `data[].object` | string | yes | Always `"model"` |
+| `data[].candidates` | array | proxy routers only | The router's own candidates for this model, each with `id` and `pricing` (§3.2) |
+
+- **Suggest-only:** a listed model is one the router can score. Clients SHOULD only
+  send candidates whose `model` is listed; the router MAY omit any other candidate
+  from its ranking.
+- **Proxy:** a router that supports proxy mode MUST include `candidates` for every
+  model it can forward to, and candidate `id`s MUST be unique across the whole
+  list. These are the `id`s a proxy request may name in `routing.candidates` (§6.1)
+  and that a proxy response reports in `routing.candidate_id` (§6.2).
+
+## 5. Suggest-only mode
+
+### 5.1 Request
+
+`POST /v1/routing/rank`
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
@@ -125,14 +178,14 @@ entries of the same response.
 The router MUST ignore `request.model` and `request.stream`; it does not forward
 the request.
 
-### 4.2 Response
+### 5.2 Response
 
 `200 OK`
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
 | `id` | string | yes | Decision identifier |
-| `object` | string | yes | Always `"model_routing"` |
+| `object` | string | yes | Always `"routing.ranking"` |
 | `created` | integer | yes | Unix timestamp, seconds |
 | `router` | object | yes | Router object (§3.3) |
 | `ranked` | array | yes | Ranked entries (§3.4), best first for the requested `cqt` |
@@ -143,19 +196,21 @@ The router:
 - MUST NOT return the same `candidate_id` twice.
 - SHOULD include every candidate it can score, so that the client can apply its own
   limits (such as a per-request budget) to the predictions.
-- MAY omit candidates it cannot score (for example, an unknown model).
-- MUST return a `422` error (§7) instead of an empty `ranked` list.
+- MAY omit candidates it cannot score (for example, a model it does not list, §4).
+- MUST return a `422` error (§8) instead of an empty `ranked` list.
 
-### 4.3 Client behaviour
+### 5.3 Client behaviour
 
 The client SHOULD send `request` to the first ranked candidate, setting `model` to
-the name that candidate's seller expects (§3.2). If the call fails with a retryable
-error, the client MAY continue down the list. The client SHOULD reject any response entry whose
-`candidate_id` it did not send.
+the name that candidate's seller expects (§3.2). If the entry has a
+`reasoning_effort`, the client MAY set the request's `reasoning_effort` to it; if the
+original request already set one, the client decides which to keep. If the call fails with a retryable
+error, the client MAY continue down the list. The client SHOULD reject any response
+entry whose `candidate_id` it did not send.
 
-## 5. Proxy mode
+## 6. Proxy mode
 
-### 5.1 Request
+### 6.1 Request
 
 `POST /v1/chat/completions`
 
@@ -166,12 +221,12 @@ The router MUST route the request when either:
 - `model` equals one of the router's routing aliases. Routers SHOULD accept `"auto"`.
 
 In proxy mode, `routing.candidates` is optional. When present, each entry needs only
-`id`, which MUST match a candidate listed by the router (§5.3); the router MUST
-restrict its choice to those candidates. When absent, every candidate the router
-lists is eligible. Clients do not send pricing or usage in proxy mode; the router
-already holds that information.
+`id`, which MUST match a candidate listed at `GET /v1/routing/models` (§4); the
+router MUST restrict its choice to those candidates. When absent, every listed
+candidate is eligible. Clients do not send pricing or usage in proxy mode; the
+router already holds that information.
 
-### 5.2 Response
+### 6.2 Response
 
 A standard Chat Completions response, unchanged except for:
 
@@ -191,26 +246,14 @@ events, as in the OpenAI API, and `routing` MUST appear on every chunk, like `mo
 The router MAY forward to further candidates when one fails before producing output.
 It MUST NOT switch candidates after output has started streaming.
 
-### 5.3 Listing candidates
-
-`GET /v1/model-routing/candidates`
-
-Returns the candidates a proxy router can forward to, as an OpenAI-style list:
-
-```json
-{ "object": "list", "data": [ { "id": "…", "model": "…", "pricing": { … } } ] }
-```
-
-Each entry is a candidate object (§3.2) without `expected_usage`.
-
-## 6. Conversation state
+## 7. Conversation state
 
 The protocol is stateless. A client that wants to keep the same candidate across a
 tool-call loop SHOULD reuse the previous decision itself rather than calling the
 router again on every step. A client SHOULD call the router when a new user message
 arrives.
 
-## 7. Errors
+## 8. Errors
 
 Errors use [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) Problem Details
 (`application/problem+json`):
@@ -234,7 +277,7 @@ Errors use [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) Problem Details
 In proxy mode, when every candidate the router tried failed, the router MAY instead
 relay the last candidate's error in the OpenAI error format.
 
-## 8. Security and privacy considerations
+## 9. Security and privacy considerations
 
 - In both modes the router receives the full inference request, including the
   conversation. Clients SHOULD only use routers they would trust with that content.

@@ -119,17 +119,15 @@
         },
         "output_tokens": {
           "type": "integer",
-          "minimum": 0
+          "minimum": 0,
+          "description": "Includes reasoning tokens, as completion_tokens does in the OpenAI API."
         }
       }
     },
     "ranked_entry": {
       "type": "object",
       "required": [
-        "candidate_id",
-        "expected_quality",
-        "expected_cost_usd",
-        "expected_usage"
+        "candidate_id"
       ],
       "properties": {
         "candidate_id": {
@@ -146,8 +144,23 @@
         },
         "expected_usage": {
           "$ref": "#/$defs/expected_usage"
+        },
+        "reasoning_effort": {
+          "description": "Suggested value for the Chat Completions reasoning_effort parameter when calling this candidate. Uses that parameter's values, which OpenAI extends over time, so any string is accepted.",
+          "type": "string",
+          "minLength": 1,
+          "examples": [
+            "none",
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ]
         }
-      }
+      },
+      "description": "Only candidate_id is required; the predictions and the reasoning-effort suggestion are optional."
     },
     "inference_request": {
       "description": "An OpenAI Chat Completions request body. Only the members IRP depends on are constrained here; see the OpenAI API reference for the full shape.",

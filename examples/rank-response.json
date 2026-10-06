@@ -1,0 +1,42 @@
+{
+  "id": "rank_01J9Z3",
+  "object": "routing.ranking",
+  "created": 1790000000,
+  "router": {
+    "id": "example-router",
+    "version": "2026-09-30"
+  },
+  "ranked": [
+    {
+      "candidate_id": "kimi@seller-c",
+      "expected_quality": 0.93,
+      "expected_cost_usd": 0.0122,
+      "expected_usage": {
+        "input_tokens": 18422,
+        "cache_read_tokens": 0,
+        "output_tokens": 450
+      },
+      "reasoning_effort": "low"
+    },
+    {
+      "candidate_id": "opus@seller-a",
+      "expected_quality": 0.97,
+      "expected_cost_usd": 0.0963,
+      "expected_usage": {
+        "input_tokens": 18422,
+        "cache_read_tokens": 16000,
+        "output_tokens": 480
+      }
+    },
+    {
+      "candidate_id": "opus@seller-b",
+      "expected_quality": 0.97,
+      "expected_cost_usd": 0.2547,
+      "expected_usage": {
+        "input_tokens": 18422,
+        "cache_read_tokens": 0,
+        "output_tokens": 480
+      }
+    }
+  ]
+}

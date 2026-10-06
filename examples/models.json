@@ -1,0 +1,41 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "anthropic/claude-opus-5",
+      "object": "model",
+      "candidates": [
+        {
+          "id": "opus@seller-a",
+          "pricing": {
+            "input": 15,
+            "cache_read": 1.5,
+            "output": 75
+          }
+        },
+        {
+          "id": "opus@seller-b",
+          "pricing": {
+            "input": 12,
+            "cache_read": 1.2,
+            "output": 70
+          }
+        }
+      ]
+    },
+    {
+      "id": "moonshotai/kimi-k3",
+      "object": "model",
+      "candidates": [
+        {
+          "id": "kimi@seller-c",
+          "pricing": {
+            "input": 0.6,
+            "cache_read": 0.15,
+            "output": 2.5
+          }
+        }
+      ]
+    }
+  ]
+}

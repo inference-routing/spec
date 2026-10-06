@@ -11,11 +11,11 @@ const ajv = new Ajv2020({ allErrors: true, strict: true, strictRequired: false }
 for (const file of readdirSync(join(root, 'schemas'))) ajv.addSchema(read(`schemas/${file}`));
 
 const cases = {
-  'suggest-request.json': 'model-routing-request.schema.json',
-  'suggest-response.json': 'model-routing-response.schema.json',
+  'rank-request.json': 'rank-request.schema.json',
+  'rank-response.json': 'rank-response.schema.json',
   'proxy-request.json': 'chat-completion-request.schema.json',
   'proxy-response.json': 'chat-completion-response.schema.json',
-  'candidate-list.json': 'candidate-list.schema.json',
+  'models.json': 'models.schema.json',
   'error-no-scorable-candidate.json': 'problem.schema.json',
 };
 
@@ -30,31 +30,41 @@ for (const file of readdirSync(join(root, 'examples'))) {
   else fail(`examples/${file}\n${ajv.errorsText(validate.errors, { separator: '\n  ' })}`);
 }
 
-// Suggest-only (SPEC §3.2, §3.4, §4.2).
-const request = read('examples/suggest-request.json');
-const response = read('examples/suggest-response.json');
+// Supported models (SPEC §4): candidate ids unique across the whole list.
+const models = read('examples/models.json').data;
+const listedModels = new Set(models.map((m) => m.id));
+const listed = new Map();
+for (const m of models) for (const c of m.candidates ?? []) {
+  if (listed.has(c.id)) fail(`models: duplicate candidate id ${c.id}`);
+  listed.set(c.id, { ...c, model: m.id });
+}
+
+// Suggest-only (SPEC §3.2, §3.4, §4, §5.2).
+const request = read('examples/rank-request.json');
+const response = read('examples/rank-response.json');
 const byId = new Map(request.routing.candidates.map((c) => [c.id, c]));
-if (byId.size !== request.routing.candidates.length) fail('suggest-request: duplicate candidate id');
+if (byId.size !== request.routing.candidates.length) fail('rank-request: duplicate candidate id');
+for (const c of request.routing.candidates) if (!listedModels.has(c.model)) fail(`rank-request: model ${c.model} is not in models`);
 const ranked = response.ranked.map((r) => r.candidate_id);
-if (new Set(ranked).size !== ranked.length) fail('suggest-response: duplicate candidate_id');
+if (new Set(ranked).size !== ranked.length) fail('rank-response: duplicate candidate_id');
 for (const entry of response.ranked) {
   const candidate = byId.get(entry.candidate_id);
-  if (!candidate) { fail(`suggest-response: unknown candidate_id ${entry.candidate_id}`); continue; }
+  if (!candidate) { fail(`rank-response: unknown candidate_id ${entry.candidate_id}`); continue; }
+  if (entry.expected_usage === undefined || entry.expected_cost_usd === undefined) continue;
   const u = entry.expected_usage;
   const p = candidate.pricing;
   const cost = ((u.input_tokens - u.cache_read_tokens) * p.input + u.cache_read_tokens * p.cache_read
     + u.output_tokens * p.output) / 1e6;
   if (Math.abs(cost - entry.expected_cost_usd) > 0.00005) {
-    fail(`suggest-response: ${entry.candidate_id} expected_cost_usd ${entry.expected_cost_usd} != ${cost.toFixed(4)} from pricing`);
+    fail(`rank-response: ${entry.candidate_id} expected_cost_usd ${entry.expected_cost_usd} != ${cost.toFixed(4)} from pricing`);
   }
 }
 
-// Proxy (SPEC §5.1, §5.2, §5.3).
-const listed = new Map(read('examples/candidate-list.json').data.map((c) => [c.id, c]));
+// Proxy (SPEC §4, §6.1, §6.2).
 const proxyRequest = read('examples/proxy-request.json');
 const proxyResponse = read('examples/proxy-response.json');
 const allowed = proxyRequest.routing.candidates.map((c) => c.id);
-for (const id of allowed) if (!listed.has(id)) fail(`proxy-request: candidate ${id} is not in candidate-list`);
+for (const id of allowed) if (!listed.has(id)) fail(`proxy-request: candidate ${id} is not in models`);
 const chosen = proxyResponse.routing.candidate_id;
 if (!allowed.includes(chosen)) fail(`proxy-response: candidate_id ${chosen} was not allowed by the request`);
 else if (listed.get(chosen).model !== proxyResponse.model) fail(`proxy-response: model does not match candidate ${chosen}`);

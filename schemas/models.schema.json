@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "models.schema.json",
+  "title": "Supported models (GET /v1/routing/models, 200)",
+  "description": "Models the router supports, in the shape of OpenAI's GET /v1/models. Proxy routers also list their own candidates for each model.",
+  "type": "object",
+  "required": [
+    "object",
+    "data"
+  ],
+  "properties": {
+    "object": {
+      "const": "list"
+    },
+    "data": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "object"
+        ],
+        "properties": {
+          "id": {
+            "description": "Model identifier, OpenRouter ID where one exists.",
+            "type": "string",
+            "minLength": 1
+          },
+          "object": {
+            "const": "model"
+          },
+          "candidates": {
+            "description": "Proxy routers only: the router's own candidates for this model.",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "pricing"
+              ],
+              "properties": {
+                "id": {
+                  "$ref": "common.schema.json#/$defs/candidate_id"
+                },
+                "pricing": {
+                  "$ref": "common.schema.json#/$defs/pricing"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

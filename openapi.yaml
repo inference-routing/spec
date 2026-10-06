@@ -18,7 +18,27 @@ security:
   - bearerAuth: []
   - {}
 paths:
-  /v1/model-routing:
+  /v1/routing/models:
+    get:
+      operationId: listRoutingModels
+      summary: List supported models (both modes)
+      description: |
+        The models this router supports, in the shape of OpenAI's `GET /v1/models`.
+        Suggest-only: the models it can score. Proxy: also the router's own candidates
+        for each model, whose ids proxy requests can name and proxy responses report.
+      tags: [models]
+      responses:
+        '200':
+          description: Supported models.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/models.schema.json
+              examples:
+                default:
+                  externalValue: examples/models.json
+        '503': { $ref: '#/components/responses/Problem' }
+  /v1/routing/rank:
     post:
       operationId: rankCandidates
       summary: Suggest-only mode
@@ -29,20 +49,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: schemas/model-routing-request.schema.json
+              $ref: schemas/rank-request.schema.json
             examples:
               default:
-                externalValue: examples/suggest-request.json
+                externalValue: examples/rank-request.json
       responses:
         '200':
           description: Candidates ranked best first for the requested cqt.
           content:
             application/json:
               schema:
-                $ref: schemas/model-routing-response.schema.json
+                $ref: schemas/rank-response.schema.json
               examples:
                 default:
-                  externalValue: examples/suggest-response.json
+                  externalValue: examples/rank-response.json
         '400': { $ref: '#/components/responses/Problem' }
         '402': { $ref: '#/components/responses/Problem' }
         '422': { $ref: '#/components/responses/Problem' }
@@ -87,22 +107,6 @@ paths:
         '402': { $ref: '#/components/responses/Problem' }
         '422': { $ref: '#/components/responses/Problem' }
         '503': { $ref: '#/components/responses/Problem' }
-  /v1/model-routing/candidates:
-    get:
-      operationId: listCandidates
-      summary: List the candidates a proxy router can forward to
-      tags: [proxy]
-      responses:
-        '200':
-          description: Candidates available to proxy-mode requests.
-          content:
-            application/json:
-              schema:
-                $ref: schemas/candidate-list.schema.json
-              examples:
-                default:
-                  externalValue: examples/candidate-list.json
-        '503': { $ref: '#/components/responses/Problem' }
 components:
   securitySchemes:
     bearerAuth:
@@ -119,6 +123,8 @@ components:
             noScorableCandidate:
               externalValue: examples/error-no-scorable-candidate.json
 tags:
+  - name: models
+    description: Supported models, for both modes.
   - name: suggest-only
     description: The router ranks; the client calls the winner.
   - name: proxy

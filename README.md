@@ -45,7 +45,7 @@ recognises the same model whichever seller offers it.
 
 | | Suggest-only | Proxy |
 |---|---|---|
-| Endpoint | `POST /v1/model-routing` | `POST /v1/chat/completions` |
+| Endpoint | `POST /v1/routing/rank` | `POST /v1/chat/completions` |
 | The router | ranks candidates and returns the ranking | ranks, forwards the request to the winner, relays its completion |
 | Who calls the candidate | the client | the router, forwarding the client's request |
 | Typical fit | marketplaces and clients that pay sellers directly | gateways and drop-in "auto" models |
@@ -53,7 +53,8 @@ recognises the same model whichever seller offers it.
 Both modes share the same building blocks: the same `routing` object in the
 request and the same candidate object, so a router can serve both with one
 ranking engine. Proxy-mode responses are standard completions with a single
-extra member.
+extra member. In both modes, `GET /v1/routing/models` tells the client what the
+router supports.
 
 ## Built on the OpenAI Chat Completions format
 
@@ -72,7 +73,7 @@ The client sends the request it wants to run and the candidates it is willing to
 use. The router returns them ranked, with predictions. The client then calls the
 winner itself.
 
-**Request:** `POST /v1/model-routing`
+**Request:** `POST /v1/routing/rank`
 
 ```jsonc
 {
@@ -111,16 +112,17 @@ winner itself.
 
 ```jsonc
 {
-  "id": "mr_01J9Z3",
-  "object": "model_routing",
+  "id": "rank_01J9Z3",
+  "object": "routing.ranking",
   "created": 1790000000,
   "router": { "id": "example-router", "version": "2026-09-30" },
   "ranked": [                          // best first for the requested cqt
     {
-      "candidate_id": "kimi@seller-c",
-      "expected_quality": 0.93,
+      "candidate_id": "kimi@seller-c",   // the only required field
+      "expected_quality": 0.93,        // optional predictions
       "expected_cost_usd": 0.0122,
-      "expected_usage": { "input_tokens": 18422, "cache_read_tokens": 0, "output_tokens": 450 }
+      "expected_usage": { "input_tokens": 18422, "cache_read_tokens": 0, "output_tokens": 450 },
+      "reasoning_effort": "low"        // optional: suggested reasoning effort for this candidate
     },
     {
       "candidate_id": "opus@seller-a",
@@ -143,8 +145,13 @@ conversation in its prompt cache, so the same model costs $0.096 there against
 $0.255 at seller B. Ranking models alone would miss this.
 
 The client sends `request` to the seller behind `kimi@seller-c`, setting `model`
-to whatever name that seller uses for the model. If that call fails, it tries the
-next entry.
+to whatever name that seller uses for the model, and may set `reasoning_effort` to
+the suggested `low`. If that call fails, it tries the next entry.
+
+Only `candidate_id` is required in a ranked entry. The order is the router's
+decision; `expected_quality`, `expected_cost_usd`, `expected_usage` and
+`reasoning_effort` are optional extras that explain or refine it, so a router that
+can only order candidates still conforms.
 
 `cqt` uses the same 0–10 scale and direction as the `cost_quality_tradeoff`
 parameter OpenRouter introduced for its Auto Router: 0 picks the most capable model
@@ -171,7 +178,7 @@ that answered and one extra member, `routing.candidate_id`, names the candidate.
   "max_tokens": 4096,
   "routing": {
     "cqt": 7,                          // lean towards cheaper
-    "candidates": [                    // optional: limit to these router-listed candidates
+    "candidates": [                    // optional: limit to these candidates from /v1/routing/models
       { "id": "opus@seller-a" },
       { "id": "kimi@seller-c" }
     ]
@@ -204,8 +211,58 @@ that answered and one extra member, `routing.candidate_id`, names the candidate.
 }
 ```
 
-The candidates a proxy router can forward to are listed at `GET /v1/model-routing/candidates`.
 A client that sends nothing but `"model": "auto"` gets routed with the defaults.
+
+## Supported models
+
+`GET /v1/routing/models` answers "what can this router route?" for both modes. It
+uses the shape of OpenAI's `GET /v1/models`, so any client that can read a model
+list can read it.
+
+```jsonc
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "anthropic/claude-opus-5",
+      "object": "model",
+      "candidates": [                  // proxy routers only
+        { "id": "opus@seller-a", "pricing": { "input": 15, "cache_read": 1.5, "output": 75 } },
+        { "id": "opus@seller-b", "pricing": { "input": 12, "cache_read": 1.2, "output": 70 } }
+      ]
+    },
+    {
+      "id": "moonshotai/kimi-k3",
+      "object": "model",
+      "candidates": [
+        { "id": "kimi@seller-c", "pricing": { "input": 0.6, "cache_read": 0.15, "output": 2.5 } }
+      ]
+    }
+  ]
+}
+```
+
+The same list does a different job in each mode.
+
+**Suggest-only: which models the router can score.** In this mode the client brings
+its own candidates, but the router can only predict quality for models it knows.
+A candidate for a model the router doesn't know would be dropped from the ranking.
+With the list, the client sends only candidates whose `model` appears in it, and
+knows in advance that every one of them will be ranked. Suggest-only routers just
+list the models, without `candidates`, because the candidates belong to the client.
+
+**Proxy: which candidates the router can forward to.** In this mode the candidates
+belong to the router: it holds the sellers, their prices and the credentials to call
+them. The client can't invent candidates, so the router publishes them under each
+model, with an `id` and current `pricing`. Those `id`s are the vocabulary both sides
+share:
+
+- **In the request**, the client names the candidates it accepts in
+  `routing.candidates`, for example `[{ "id": "opus@seller-a" }, { "id": "kimi@seller-c" }]`
+  to rule out seller B. An `id` not in the list is rejected.
+- **In the response**, `routing.candidate_id` is one of those `id`s. Looking it up in
+  the list tells the client which seller answered and at what price, which `model`
+  alone can't when two candidates offer the same model.
 
 ## What it does not cover: trust
 
