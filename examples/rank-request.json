@@ -1,30 +1,55 @@
 {
   "request": {
     "messages": [
-      { "role": "system", "content": "You are a helpful assistant." },
-      { "role": "user", "content": "Summarise the attached contract." }
+      {
+        "role": "system",
+        "content": "You are a helpful assistant."
+      },
+      {
+        "role": "user",
+        "content": "Summarise the attached contract."
+      }
     ],
     "max_tokens": 4096
   },
   "routing": {
-    "cqt": 5,
+    "cost_quality_tradeoff": 5,
     "candidates": [
       {
         "id": "opus@seller-a",
         "model": "anthropic/claude-opus-5",
-        "pricing": { "input": 15, "cache_read": 1.5, "output": 75 },
-        "expected_usage": { "cache_read_tokens": 16000 }
+        "pricing": {
+          "input": 15,
+          "cache_read": 1.5,
+          "output": 75
+        },
+        "expected_usage": {
+          "cache_read_tokens": 16000
+        }
       },
       {
         "id": "opus@seller-b",
         "model": "anthropic/claude-opus-5",
-        "pricing": { "input": 12, "cache_read": 1.2, "output": 70 }
+        "pricing": {
+          "input": 12,
+          "cache_read": 1.2,
+          "output": 70
+        }
       },
       {
         "id": "kimi@seller-c",
         "model": "moonshotai/kimi-k3",
-        "pricing": { "input": 0.6, "cache_read": 0.15, "output": 2.5 }
+        "pricing": {
+          "input": 0.6,
+          "cache_read": 0.15,
+          "output": 2.5
+        }
       }
-    ]
+    ],
+    "extra": {
+      "example.com": {
+        "tenant": "team-a"
+      }
+    }
   }
 }

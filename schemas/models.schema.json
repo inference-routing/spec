@@ -45,12 +45,21 @@
                 },
                 "pricing": {
                   "$ref": "common.schema.json#/$defs/pricing"
+                },
+                "extra": {
+                  "$ref": "common.schema.json#/$defs/extra"
                 }
               }
             }
+          },
+          "extra": {
+            "$ref": "common.schema.json#/$defs/extra"
           }
         }
       }
+    },
+    "extra": {
+      "$ref": "common.schema.json#/$defs/extra"
     }
   }
 }

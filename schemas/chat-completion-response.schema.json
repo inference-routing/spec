@@ -33,6 +33,9 @@
       "properties": {
         "candidate_id": {
           "$ref": "common.schema.json#/$defs/candidate_id"
+        },
+        "extra": {
+          "$ref": "common.schema.json#/$defs/extra"
         }
       }
     }

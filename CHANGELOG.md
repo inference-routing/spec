@@ -4,6 +4,20 @@ Versions follow [Semantic Versioning](https://semver.org/). Before 1.0, any
 change to the protocol bumps the minor version; editorial fixes bump the patch.
 The version appears in `SPEC.md`, `README.md`, `openapi.yaml` and `package.json`.
 
+## 0.3.0-draft (2026-10-06)
+
+Breaking:
+
+- `cqt` is renamed `cost_quality_tradeoff`, the name Not Diamond and OpenRouter use
+  for the same 0–10 scale. Scale, direction and default (`5`) are unchanged.
+
+Added:
+
+- `extra`: one namespaced member, allowed on every IRP object, where clients
+  and routers put data the spec does not define. Senders add nothing else outside
+  the spec's fields.
+- Authors: Marco De Rossi (Levanto Labs), Shahaf Antwarg (AntSeed), Alexander Ludwig (AntSeed).
+
 ## 0.2.1-draft (2026-10-06)
 
 Clarified:

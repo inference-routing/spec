@@ -38,5 +38,10 @@
         "output_tokens": 480
       }
     }
-  ]
+  ],
+  "extra": {
+    "router.example.com": {
+      "trace_id": "4bf92f3577b34da6"
+    }
+  }
 }

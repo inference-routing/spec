@@ -1,11 +1,13 @@
 openapi: 3.1.0
 info:
   title: Inference Routing Protocol
-  version: 0.2.1-draft
+  version: 0.3.0-draft
   summary: Ask a router where an LLM request should run.
   description: |
     See SPEC.md for the normative text. Request and response objects are defined in
     schemas/ (JSON Schema 2020-12) and referenced from here.
+
+    Authors: Marco De Rossi (Levanto Labs), Shahaf Antwarg (AntSeed), Alexander Ludwig (AntSeed).
   license:
     name: Apache-2.0
     identifier: Apache-2.0
@@ -55,7 +57,7 @@ paths:
                 externalValue: examples/rank-request.json
       responses:
         '200':
-          description: Candidates ranked best first for the requested cqt.
+          description: Candidates ranked best first for the requested cost_quality_tradeoff.
           content:
             application/json:
               schema:

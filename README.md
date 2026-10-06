@@ -1,6 +1,8 @@
 # Inference Routing Protocol (IRP)
 
-**Status:** `0.2.1-draft`. Open for comment; expect breaking changes.
+**Status:** `0.3.0-draft`. Open for comment; expect breaking changes.
+
+**Authors:** Marco De Rossi (Levanto Labs), Shahaf Antwarg (AntSeed), Alexander Ludwig (AntSeed)
 
 An open wire protocol for asking a router *where* an LLM request should run.
 
@@ -91,7 +93,7 @@ winner itself.
     "max_tokens": 4096
   },
   "routing": {
-    "cqt": 5,                          // cost/quality trade-off: 0 = best quality, 10 = cheapest
+    "cost_quality_tradeoff": 5,        // 0 = best quality, 10 = cheapest
     "candidates": [
       {
         "id": "opus@seller-a",
@@ -122,7 +124,7 @@ winner itself.
   "object": "routing.ranking",
   "created": 1790000000,
   "router": { "id": "example-router", "version": "2026-09-30" },
-  "ranked": [                          // best first for the requested cqt
+  "ranked": [                          // best first for the requested trade-off
     {
       "candidate_id": "kimi@seller-c",   // the only required field
       "expected_quality": 0.93,        // optional predictions
@@ -159,10 +161,11 @@ decision; `expected_quality`, `expected_cost_usd`, `expected_usage` and
 `reasoning_effort` are optional extras that explain or refine it, so a router that
 can only order candidates still conforms.
 
-`cqt` uses the same 0–10 scale and direction as the `cost_quality_tradeoff`
-parameter OpenRouter introduced for its Auto Router: 0 picks the most capable model
-regardless of price, 10 lets the cheapest model win
-([announcement](https://x.com/OpenRouter/status/2061476882470580329)).
+`cost_quality_tradeoff` has the same name, 0–10 scale and direction as the
+parameter in [Not Diamond](https://docs.notdiamond.ai/docs/key-concepts)'s model
+router and in OpenRouter's original Auto Router
+([announcement](https://x.com/OpenRouter/status/2061476882470580329)): 0 picks the
+most capable model regardless of price, 10 lets the cheapest model win.
 
 ## Proxy mode
 
@@ -183,7 +186,7 @@ that answered and one extra member, `routing.candidate_id`, names the candidate.
   ],
   "max_tokens": 4096,
   "routing": {
-    "cqt": 7,                          // lean towards cheaper
+    "cost_quality_tradeoff": 7,        // lean towards cheaper
     "candidates": [                    // optional: limit to these candidates from /v1/routing/models
       { "id": "opus@seller-a" },
       { "id": "kimi@seller-c" }
@@ -269,6 +272,21 @@ share:
 - **In the response**, `routing.candidate_id` is one of those `id`s. Looking it up in
   the list tells the client which seller answered and at what price, which `model`
   alone can't when two candidates offer the same model.
+
+## Adding your own fields
+
+Clients and routers can carry their own data in an `extra` member, allowed on
+every IRP object: the routing object, candidates, model entries, ranked entries and
+responses. Keys are namespaces, ideally a domain you control, so custom fields never
+clash with each other or with fields a later version of the spec adds:
+
+```json
+"extra": { "example.com": { "tenant": "team-a" } }
+```
+
+Everything outside `extra` is defined by the spec. The inference request
+itself is a normal OpenAI Chat Completions body, so its own extra fields follow the
+API it targets. See [SPEC.md §2](SPEC.md#extra-fields) for the rules.
 
 ## What it does not cover: trust
 

@@ -3,8 +3,8 @@
   "$id": "common.schema.json",
   "title": "IRP shared definitions",
   "$defs": {
-    "cqt": {
-      "description": "Cost/quality trade-off, 0 to 10: 0 = best quality regardless of price, 10 = cheapest acceptable, 5 = balanced. Same scale and direction as OpenRouter's original Auto Router cost_quality_tradeoff.",
+    "cost_quality_tradeoff": {
+      "description": "Cost/quality trade-off, 0 to 10: 0 = best quality regardless of price, 10 = cheapest acceptable, 5 = balanced. Same name, scale and direction as Not Diamond's and OpenRouter's original Auto Router cost_quality_tradeoff.",
       "type": "integer",
       "minimum": 0,
       "maximum": 10,
@@ -68,6 +68,9 @@
               "default": 0
             }
           }
+        },
+        "extra": {
+          "$ref": "#/$defs/extra"
         }
       }
     },
@@ -80,6 +83,9 @@
       "properties": {
         "id": {
           "$ref": "#/$defs/candidate_id"
+        },
+        "extra": {
+          "$ref": "#/$defs/extra"
         }
       }
     },
@@ -158,6 +164,9 @@
             "xhigh",
             "max"
           ]
+        },
+        "extra": {
+          "$ref": "#/$defs/extra"
         }
       },
       "description": "Only candidate_id is required; the predictions and the reasoning-effort suggestion are optional."
@@ -197,6 +206,17 @@
         "stream": {
           "type": "boolean"
         }
+      }
+    },
+    "extra": {
+      "description": "Implementation-defined data. Keys are namespaces, ideally a domain name the owner controls; values are objects defined by that owner. Receivers ignore namespaces they do not recognise.",
+      "type": "object",
+      "propertyNames": {
+        "minLength": 1,
+        "maxLength": 253
+      },
+      "additionalProperties": {
+        "type": "object"
       }
     }
   }

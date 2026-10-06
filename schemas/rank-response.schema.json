@@ -3,17 +3,38 @@
   "$id": "rank-response.schema.json",
   "title": "Suggest-only response (POST /v1/routing/rank, 200)",
   "type": "object",
-  "required": ["id", "object", "created", "router", "ranked"],
+  "required": [
+    "id",
+    "object",
+    "created",
+    "router",
+    "ranked"
+  ],
   "properties": {
-    "id": { "type": "string", "minLength": 1 },
-    "object": { "const": "routing.ranking" },
-    "created": { "type": "integer", "minimum": 0 },
-    "router": { "$ref": "common.schema.json#/$defs/router" },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "object": {
+      "const": "routing.ranking"
+    },
+    "created": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "router": {
+      "$ref": "common.schema.json#/$defs/router"
+    },
     "ranked": {
       "type": "array",
       "minItems": 1,
       "maxItems": 512,
-      "items": { "$ref": "common.schema.json#/$defs/ranked_entry" }
+      "items": {
+        "$ref": "common.schema.json#/$defs/ranked_entry"
+      }
+    },
+    "extra": {
+      "$ref": "common.schema.json#/$defs/extra"
     }
   }
 }

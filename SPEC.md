@@ -1,6 +1,8 @@
 # Inference Routing Protocol: Specification
 
-**Version:** `0.2.1-draft`
+**Version:** `0.3.0-draft`
+
+**Authors:** Marco De Rossi (Levanto Labs), Shahaf Antwarg (AntSeed), Alexander Ludwig (AntSeed)
 
 The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be interpreted as
 described in [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119) and
@@ -17,7 +19,8 @@ appear in all capitals.
   model offered by two sellers is two candidates.
 - **Inference request:** an [OpenAI Chat Completions](https://platform.openai.com/docs/api-reference/chat/create)
   request body.
-- **CQT:** the cost/quality trade-off requested by the client (§3.1).
+- **Cost/quality trade-off:** how the client weighs cost against quality, sent as
+  `cost_quality_tradeoff` (§3.1).
 
 ## 2. Conventions
 
@@ -27,9 +30,44 @@ appear in all capitals.
 - `input_tokens` always counts the whole prompt, *including* tokens read from
   cache. `cache_read_tokens` is the part of it served from cache.
 - Receivers MUST ignore object members they do not recognise, so that later
-  versions can add fields without breaking existing implementations.
+  versions can add fields without breaking existing implementations. Data this
+  specification does not define goes in `extra` (see below).
 - The protocol version is carried in the path (`/v1/`). Breaking changes require
   a new path version.
+
+### Extra fields
+
+Clients and routers add their own data through a single member, `extra`, so
+that it can never clash with a field a later version of this specification adds.
+`extra` is allowed on every object this specification defines:
+
+| Where | Objects |
+|---|---|
+| Request, both modes | The routing object (§3.1) and each of its candidates (§3.2) |
+| Supported models | The list, each model entry and each of its candidates (§4) |
+| Suggest-only response | The response (§5.2) and each ranked entry (§3.4) |
+| Proxy response | The `routing` member (§6.2) |
+
+Its keys are namespaces, and each value is an object defined by the namespace's
+owner:
+
+```json
+"extra": {
+  "example.com": { "tenant": "team-a" }
+}
+```
+
+- A namespace SHOULD be a domain name its owner controls, such as `example.com`,
+  so that two implementations never pick the same key.
+- Senders MUST NOT add members other than those this specification defines,
+  except inside `extra`.
+- Receivers MUST ignore namespaces they do not recognise. Data in `extra` MUST NOT
+  change the meaning of a field this specification defines.
+
+The inference request itself (`request` in suggest-only mode, the body in proxy
+mode) is an OpenAI Chat Completions body, not an IRP object. Its own extra fields
+follow the conventions of the API it targets, and IRP does not constrain them; IRP's
+only addition to it is the `routing` member in proxy mode.
 
 ## 3. Shared objects
 
@@ -39,20 +77,24 @@ Sent by the client in both modes.
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
-| `cqt` | integer, 0–10 | no, default `5` | Cost/quality trade-off. `0` asks for the best quality regardless of price, `10` for the cheapest acceptable candidate, `5` for a balance |
+| `cost_quality_tradeoff` | integer, 0–10 | no, default `5` | Cost/quality trade-off. `0` asks for the best quality regardless of price, `10` for the cheapest acceptable candidate, `5` for a balance |
 | `candidates` | array | suggest: yes · proxy: no | The candidates the router may choose from (§3.2, §6.1) |
 
-The scale and direction are those of the `cost_quality_tradeoff` parameter that
-OpenRouter introduced for its Auto Router, where 0 "always picks the most capable
-model regardless of price" and 10 means "the cheapest model wins"
+The name, scale and direction are those of the `cost_quality_tradeoff` parameter of
+Not Diamond's model router, where `0` is quality-first and `10` always selects the
+cheapest model ([docs](https://docs.notdiamond.ai/docs/key-concepts)), and of
+OpenRouter's Auto Router, where 0 "always picks the most capable model regardless
+of price" and 10 means "the cheapest model wins"
 ([announcement](https://x.com/OpenRouter/status/2061476882470580329)). OpenRouter
-has since deprecated that parameter in favour of named `cost_tier` bands
+has since deprecated the parameter in favour of named `cost_tier` bands
 ([docs](https://openrouter.ai/docs/guides/routing/routers/auto-router)); IRP keeps
-the numeric scale because it is finer-grained and already in use.
+the numeric scale because it is finer-grained and still in use. IRP's default is the
+balanced midpoint, `5`.
 
-The router decides how to map `cqt` onto its own objective, but the mapping MUST be
-monotonic: for the same request and candidates, raising `cqt` MUST NOT raise the
-expected cost of the top-ranked candidate.
+The router decides how to map `cost_quality_tradeoff` onto its own objective, but
+the mapping MUST be monotonic: for the same request and candidates, raising
+`cost_quality_tradeoff` MUST NOT raise the expected cost of the top-ranked
+candidate.
 
 ### 3.2 Candidate object
 
@@ -199,7 +241,7 @@ the client accounts for the difference. The client's own
 | `object` | string | yes | Always `"routing.ranking"` |
 | `created` | integer | yes | Unix timestamp, seconds |
 | `router` | object | yes | Router object (§3.3) |
-| `ranked` | array | yes | Ranked entries (§3.4), best first for the requested `cqt` |
+| `ranked` | array | yes | Ranked entries (§3.4), best first for the requested `cost_quality_tradeoff` |
 
 The router:
 
