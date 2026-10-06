@@ -1,6 +1,6 @@
 # Inference Routing Protocol: Specification
 
-**Version:** `0.1.0-draft`
+**Version:** `0.2.0-draft`
 
 The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be interpreted as
 described in [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119) and

@@ -1,6 +1,6 @@
 # Inference Routing Protocol (IRP)
 
-**Status:** `0.1.0-draft`. Open for comment; expect breaking changes.
+**Status:** `0.2.0-draft`. Open for comment; expect breaking changes.
 
 An open wire protocol for asking a router *where* an LLM request should run.
 
@@ -284,6 +284,8 @@ discovered.
 | [`openapi.yaml`](openapi.yaml) | OpenAPI 3.1 description of all endpoints |
 | [`schemas/`](schemas/) | JSON Schema 2020-12 for every object |
 | [`examples/`](examples/) | Complete request/response examples, validated in CI |
+| [`CHANGELOG.md`](CHANGELOG.md) | Changes between versions |
+| [`assets/`](assets/) | Logo (SVG and PNG) |
 
 Validate the examples against the schemas:
 
@@ -296,7 +298,7 @@ npm test
 
 Open an issue or discussion for design questions, and a pull request for concrete
 changes to the spec, schemas or examples. Changes to `SPEC.md` must keep the
-schemas and examples in sync.
+schemas and examples in sync, bump the version and add a `CHANGELOG.md` entry.
 
 ## License
 
