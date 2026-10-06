@@ -291,7 +291,6 @@ discovered.
 | [`schemas/`](schemas/) | JSON Schema 2020-12 for every object |
 | [`examples/`](examples/) | Complete request/response examples, validated in CI |
 | [`CHANGELOG.md`](CHANGELOG.md) | Changes between versions |
-| [`assets/`](assets/) | Logo (SVG and PNG) |
 
 Validate the examples against the schemas:
 
