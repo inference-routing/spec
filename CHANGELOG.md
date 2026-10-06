@@ -4,6 +4,16 @@ Versions follow [Semantic Versioning](https://semver.org/). Before 1.0, any
 change to the protocol bumps the minor version; editorial fixes bump the patch.
 The version appears in `SPEC.md`, `README.md`, `openapi.yaml` and `package.json`.
 
+## 0.2.1-draft (2026-10-06)
+
+Clarified:
+
+- In suggest-only mode, the client decides how much of the conversation
+  `request.messages` contains: the whole conversation, the last few turns or only
+  the latest message. Predictions describe the request as sent. In proxy mode the
+  request is forwarded to the model, so it carries the whole conversation. No new
+  fields.
+
 ## 0.2.0-draft (2026-10-06)
 
 Breaking:

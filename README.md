@@ -1,6 +1,6 @@
 # Inference Routing Protocol (IRP)
 
-**Status:** `0.2.0-draft`. Open for comment; expect breaking changes.
+**Status:** `0.2.1-draft`. Open for comment; expect breaking changes.
 
 An open wire protocol for asking a router *where* an LLM request should run.
 
@@ -60,9 +60,15 @@ router supports.
 
 IRP does not invent a prompt format. The request being routed is a standard
 [OpenAI Chat Completions](https://platform.openai.com/docs/api-reference/chat/create)
-body: `messages`, `tools`, `max_tokens` and so on, passed through unchanged. Every
-client that can call an OpenAI-compatible API already produces it, and the router
-sees exactly what the model will see: system prompt, history, tools and images.
+body: `messages`, `tools`, `max_tokens` and so on. Every client that can call an
+OpenAI-compatible API already produces it.
+
+The same object covers every choice about how much to share. In suggest-only mode,
+the client decides how much of the conversation to put in it: the whole
+conversation, the last few turns, or only the latest message. The router ranks
+whatever it receives. More context gives better predictions; less shares less. In
+proxy mode the request is forwarded to the model, so it carries the whole
+conversation.
 
 The protocol itself is described with [OpenAPI 3.1](openapi.yaml) and
 [JSON Schema 2020-12](schemas/), so client and server code can be generated from it.
@@ -77,7 +83,7 @@ winner itself.
 
 ```jsonc
 {
-  "request": {                         // OpenAI Chat Completions body, unchanged
+  "request": {                         // OpenAI Chat Completions body; the client chooses how many turns
     "messages": [
       { "role": "system", "content": "You are a helpful assistant." },
       { "role": "user", "content": "Summarise the attached contract." }

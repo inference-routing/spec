@@ -1,6 +1,6 @@
 {
   "name": "inference-routing-protocol",
-  "version": "0.2.0-draft",
+  "version": "0.2.1-draft",
   "private": true,
   "description": "Specification, schemas and examples for the Inference Routing Protocol",
   "license": "Apache-2.0",

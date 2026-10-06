@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Inference Routing Protocol
-  version: 0.2.0-draft
+  version: 0.2.1-draft
   summary: Ask a router where an LLM request should run.
   description: |
     See SPEC.md for the normative text. Request and response objects are defined in

@@ -1,6 +1,6 @@
 # Inference Routing Protocol: Specification
 
-**Version:** `0.2.0-draft`
+**Version:** `0.2.1-draft`
 
 The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be interpreted as
 described in [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119) and
@@ -172,11 +172,22 @@ Lists the models the router supports, for both modes, in the shape of OpenAI's
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
-| `request` | object | yes | The inference request, unchanged |
+| `request` | object | yes | The inference request, with as much of the conversation as the client chooses to share |
 | `routing` | object | yes | Routing object (§3.1). `candidates` is required, with 1–512 entries |
 
 The router MUST ignore `request.model` and `request.stream`; it does not forward
 the request.
+
+The client decides how much of the conversation `request.messages` contains: the
+whole conversation, the last few turns, or only the latest user message. The body
+MUST still be a valid Chat Completions request, and the router ranks on what it
+receives. More context generally gives better predictions; less context shares
+less with the router.
+
+Predictions describe the request as sent. If the client trims the conversation,
+`expected_usage` and `expected_cost_usd` cover only what the router received, and
+the client accounts for the difference. The client's own
+`expected_usage.cache_read_tokens` (§3.2) likewise refers to the request as sent.
 
 ### 5.2 Response
 
@@ -225,6 +236,9 @@ In proxy mode, `routing.candidates` is optional. When present, each entry needs 
 router MUST restrict its choice to those candidates. When absent, every listed
 candidate is eligible. Clients do not send pricing or usage in proxy mode; the
 router already holds that information.
+
+Unlike suggest-only mode, the request is the inference itself: the router forwards
+it to the chosen candidate, so it carries everything the model should see.
 
 ### 6.2 Response
 
@@ -279,8 +293,9 @@ relay the last candidate's error in the OpenAI error format.
 
 ## 9. Security and privacy considerations
 
-- In both modes the router receives the full inference request, including the
-  conversation. Clients SHOULD only use routers they would trust with that content.
+- The router receives the conversation the client sends: in proxy mode the full
+  inference request, in suggest-only mode as much of it as the client chooses to
+  share (§5.1). Clients SHOULD only use routers they would trust with that content.
 - Predictions are advisory. Actual cost and quality depend on the candidate, and
   this protocol does not verify that a candidate runs the model it claims (see
   [What it does not cover: trust](README.md#what-it-does-not-cover-trust)).
